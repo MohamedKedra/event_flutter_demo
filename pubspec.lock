@@ -201,12 +201,12 @@ packages:
     source: hosted
     version: "3.0.13"
   rxdart:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: rxdart
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.24.1"
+    version: "0.23.1"
   sky_engine:
     dependency: transitive
     description: flutter

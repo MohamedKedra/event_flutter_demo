@@ -1,3 +1,5 @@
+import 'package:eventflutterdemo/blocs/EventBloc.dart';
+import 'package:eventflutterdemo/data/event_response.dart';
 import 'package:eventflutterdemo/screens/simple_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -9,6 +11,15 @@ class EventScreen extends StatefulWidget {
 }
 
 class _EventScreenState extends State<EventScreen> {
+  EventBloc bloc;
+
+  @override
+  void initState() {
+    super.initState();
+    bloc = EventBloc();
+    bloc.refreshEvent();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -19,18 +30,37 @@ class _EventScreenState extends State<EventScreen> {
   _buildCustomScroll() {
     return Directionality(
       textDirection: TextDirection.rtl,
-      child: CustomScrollView(
-        slivers: [
-          _buildAppbar(),
-          SliverList(
-            delegate: SliverChildListDelegate(_buildList(4)),
-          )
-        ],
+      child: StreamBuilder<EventResponse>(
+          initialData: null,
+          stream: bloc.streamSubject.stream,
+        builder: (context, snapshot) {
+          if(snapshot.hasData){
+            return CustomScrollView(
+              slivers: [
+                _buildAppbar(snapshot.data.img),
+                SliverList(
+                  delegate:
+                  SliverChildListDelegate(_buildList(4, snapshot.data)),
+                )
+              ],
+            );
+          }else{
+            return CircularProgressIndicator();
+          }
+        }
       ),
     );
   }
 
-  List _buildList(int count) {
+  Widget _buildLoadingWidget() {
+    return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [Text("Loading data from API..."), CircularProgressIndicator()],
+        ));
+  }
+
+  List _buildList(int count, EventResponse eventResponse) {
     List<Widget> listItems = List();
     for (int i = 0; i < count; i++) {
       switch (i) {
@@ -38,7 +68,7 @@ class _EventScreenState extends State<EventScreen> {
           {
             listItems.add(
               Container(
-                child: _buildEventDetails(),
+                child: _buildEventDetails(eventResponse),
               ),
             );
           }
@@ -48,7 +78,7 @@ class _EventScreenState extends State<EventScreen> {
           {
             listItems.add(
               Container(
-                child: _buildTrainerInfo(),
+                child: _buildTrainerInfo(eventResponse),
               ),
             );
           }
@@ -58,7 +88,7 @@ class _EventScreenState extends State<EventScreen> {
           {
             listItems.add(
               Container(
-                child: _buildAboutLayout(),
+                child: _buildAboutLayout(eventResponse),
               ),
             );
           }
@@ -68,7 +98,7 @@ class _EventScreenState extends State<EventScreen> {
           {
             listItems.add(
               Container(
-                child: _buildPriceTypes(),
+                child: _buildPriceTypes(eventResponse),
               ),
             );
           }
@@ -79,7 +109,7 @@ class _EventScreenState extends State<EventScreen> {
     return listItems;
   }
 
-  _buildAppbar() => SliverAppBar(
+  _buildAppbar(List<String> imageUrls) => SliverAppBar(
         actions: [
           IconButton(icon: Icon(Icons.share), onPressed: () => {}),
           IconButton(icon: Icon(Icons.star_border), onPressed: () => {}),
@@ -91,14 +121,14 @@ class _EventScreenState extends State<EventScreen> {
         flexibleSpace: FlexibleSpaceBar(
           background: Container(
             child: ImageSliderWidget(
-              imageUrls: _imageUrls,
+              imageUrls: imageUrls,
               imageBorderRadius: BorderRadius.circular(0.0),
             ),
           ),
         ),
       );
 
-  _buildEventDetails() => Container(
+  _buildEventDetails(EventResponse eventResponse) => Container(
         margin: EdgeInsets.symmetric(horizontal: 16),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -107,21 +137,21 @@ class _EventScreenState extends State<EventScreen> {
             Container(
               height: 16,
             ),
-            Text("# Music"),
+            Text("# ${eventResponse.interest}"),
             Text(
-              "Event Celebration Party",
+              eventResponse.title,
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
-            _buildLayout(Icon(Icons.calendar_today), "Tue, 15Jul,2018"),
-            _buildLayout(Icon(Icons.not_listed_location), "Germany"),
+            _buildLayout(Icon(Icons.calendar_today), eventResponse.date),
+            _buildLayout(
+                Icon(Icons.not_listed_location), eventResponse.address),
             Divider()
           ],
         ),
       );
 
-  _buildTrainerInfo() => Container(
-
-    margin: EdgeInsets.symmetric(horizontal: 16),
+  _buildTrainerInfo(EventResponse eventResponse) => Container(
+        margin: EdgeInsets.symmetric(horizontal: 16),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -132,24 +162,24 @@ class _EventScreenState extends State<EventScreen> {
                 Container(
                   margin: EdgeInsets.only(right: 8),
                   child: Image.network(
-                    _imageUrls[3],
+                    eventResponse.trainerImg,
                     height: 50,
                     width: 50,
                   ),
                 ),
-                _buildHeaderSectionTitle("Ahmed Ali")
+                _buildHeaderSectionTitle(eventResponse.trainerName)
               ],
             ),
             Container(
               margin: EdgeInsets.only(bottom: 8),
-                child: Text(
-                    "About trainerAbout trainerAbout trainerAbout trainerAbout trainerAbout trainerAbout trainerAbout trainerAbout trainer")),
+              child: Text(eventResponse.trainerInfo),
+            ),
             Divider()
           ],
         ),
       );
 
-  _buildAboutLayout() => Container(
+  _buildAboutLayout(EventResponse eventResponse) => Container(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -164,8 +194,7 @@ class _EventScreenState extends State<EventScreen> {
                       margin: EdgeInsets.only(bottom: 16),
                       child: _buildHeaderSectionTitle("About Event"),
                     ),
-                    Text(
-                        "About trainerAbout trainerAbout trainerAbout trainerAbout trainerAbout trainerAbout trainerAbout trainerAbout trainer"),
+                    Text(eventResponse.occasionDetail),
                   ],
                 )),
             Divider()
@@ -173,7 +202,9 @@ class _EventScreenState extends State<EventScreen> {
         ),
       );
 
-  _buildPriceTypes() => Container(
+  _buildPriceTypes(EventResponse eventResponse) {
+    var types = eventResponse.reservTypes;
+    return Container(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -188,14 +219,13 @@ class _EventScreenState extends State<EventScreen> {
                       margin: EdgeInsets.only(bottom: 16),
                       child: _buildHeaderSectionTitle("Price Type"),
                     ),
-                    Row(
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: NeverScrollableScrollPhysics(),
+                      itemBuilder: (context,index)=>Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [Text("Price 1"), Text("200 EGP")],
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [Text("Price 2"), Text("300 EGP")],
-                    ),
+                      children: [Text(types[index].name), Text("${types[index].price.toString()} SAR")],
+                    ),itemCount: types.length,)
                   ],
                 )),
             SizedBox(
@@ -208,6 +238,7 @@ class _EventScreenState extends State<EventScreen> {
           ],
         ),
       );
+  }
 
   _buildLayout(Widget leading, String title) => ListTile(
         leading: leading,
@@ -222,10 +253,9 @@ class _EventScreenState extends State<EventScreen> {
         ),
       );
 
-  final _imageUrls = [
-    "http://skillzycp.com/upload/business/389_636896432064799384.jpg",
-    "http://skillzycp.com/upload/business/389_636896432315268827.jpg",
-    "http://skillzycp.com/upload/business/389_636896432445581923.jpg",
-    "https://images.pexels.com/photos/396547/pexels-photo-396547.jpeg?auto=compress&cs=tinysrgb&h=350"
-  ];
+  @override
+  void dispose() {
+    super.dispose();
+    bloc.dispose();
+  }
 }
