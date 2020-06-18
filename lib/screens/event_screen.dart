@@ -1,6 +1,11 @@
+import 'dart:io';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:eventflutterdemo/blocs/EventBloc.dart';
 import 'package:eventflutterdemo/data/event_response.dart';
 import 'package:eventflutterdemo/screens/simple_slider.dart';
+import 'package:eventflutterdemo/utils/utils.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
@@ -45,7 +50,7 @@ class _EventScreenState extends State<EventScreen> {
               ],
             );
           }else{
-            return CircularProgressIndicator();
+            return _buildLoadingWidget();
           }
         }
       ),
@@ -128,8 +133,8 @@ class _EventScreenState extends State<EventScreen> {
         ),
       );
 
-  _buildEventDetails(EventResponse eventResponse) => Container(
-        margin: EdgeInsets.symmetric(horizontal: 16),
+  _buildEventDetails(EventResponse eventResponse) {
+    return Container(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -137,18 +142,30 @@ class _EventScreenState extends State<EventScreen> {
             Container(
               height: 16,
             ),
-            Text("# ${eventResponse.interest}"),
-            Text(
-              eventResponse.title,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            Container(
+                margin: EdgeInsets.symmetric(horizontal: 16),
+                child: Text("# ${eventResponse.interest}")),
+            Container(
+              margin: EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                eventResponse.title,
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
             ),
-            _buildLayout(Icon(Icons.calendar_today), eventResponse.date),
-            _buildLayout(
-                Icon(Icons.not_listed_location), eventResponse.address),
+            _buildLayout(Image(
+              height: 25,
+                width: 25,
+                image: AssetImage("assets/ic_calendar.png")
+            ), getDate(eventResponse)),
+            _buildLayout(Image(
+                height: 25,
+                width: 25,
+                image: AssetImage("assets/ic_pin.png")), eventResponse.address),
             Divider()
           ],
         ),
       );
+  }
 
   _buildTrainerInfo(EventResponse eventResponse) => Container(
         margin: EdgeInsets.symmetric(horizontal: 16),
@@ -160,18 +177,25 @@ class _EventScreenState extends State<EventScreen> {
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 Container(
-                  margin: EdgeInsets.only(right: 8),
-                  child: Image.network(
-                    eventResponse.trainerImg,
+                  margin: EdgeInsets.only(left: 8),
+                  child: CachedNetworkImage(
+                    imageUrl: eventResponse.trainerImg,
                     height: 50,
                     width: 50,
+                    placeholder: (context, url) => Center(
+                      child: Platform.isIOS
+                          ? CupertinoActivityIndicator()
+                          : CircularProgressIndicator(),
+                    ),
+                    errorWidget: (context, url, error) => Icon(Icons.error),
+                    fit: BoxFit.fill,
                   ),
                 ),
                 _buildHeaderSectionTitle(eventResponse.trainerName)
               ],
             ),
             Container(
-              margin: EdgeInsets.only(bottom: 8),
+              margin: EdgeInsets.only(top:8,bottom: 8),
               child: Text(eventResponse.trainerInfo),
             ),
             Divider()
@@ -192,7 +216,7 @@ class _EventScreenState extends State<EventScreen> {
                   children: [
                     Container(
                       margin: EdgeInsets.only(bottom: 16),
-                      child: _buildHeaderSectionTitle("About Event"),
+                      child: _buildHeaderSectionTitle("عن الدورة"),
                     ),
                     Text(eventResponse.occasionDetail),
                   ],
@@ -206,18 +230,17 @@ class _EventScreenState extends State<EventScreen> {
     var types = eventResponse.reservTypes;
     return Container(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-                margin: EdgeInsets.symmetric(horizontal: 16),
+                margin: EdgeInsets.only(right: 16,left: 16,bottom: 8),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      margin: EdgeInsets.only(bottom: 16),
-                      child: _buildHeaderSectionTitle("Price Type"),
+                      child: _buildHeaderSectionTitle("التكلفة"),
                     ),
                     ListView.builder(
                       shrinkWrap: true,
@@ -230,9 +253,14 @@ class _EventScreenState extends State<EventScreen> {
                 )),
             SizedBox(
               width: double.infinity,
+              height: 80,
               child: RaisedButton(
-                onPressed: () => {},
-                child: Text("data"),
+                color: Colors.purple,
+                textColor: Colors.white,
+                onPressed: () => {
+//                  Scaffold.of(context).showSnackBar(SnackBar(content: Text("برجاء المحاولة لاحقا :]")))
+                },
+                child: Text("قم بالحجز الأن"),
               ),
             )
           ],

@@ -13,7 +13,7 @@ class MyApp extends StatelessWidget {
       title: 'Event Demo',
       theme: ThemeData(
 
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.purple,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
       home: EventScreen(),
