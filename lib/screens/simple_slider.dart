@@ -80,8 +80,9 @@ class ImageSliderWidgetState extends State<ImageSliderWidget> {
   Positioned _buildDotsIndicatorOverlay() {
     return Positioned(
       bottom: 20.0,
-      left: 20.0,
-      right: 0.0,
+      left: 0.0,
+      right: MediaQuery.of(context).size.width - 100,
+
       child: DotsIndicator(
         controller: _controller,
         itemCount: _pages.length,
